@@ -13,18 +13,6 @@ on:
         description: 'The name for the private mirror'
         required: true
         default: 'demo-private-001'
-      actor:
-        description: 'The actor who triggered the workflow'
-        required: false
-        default: '${{ github.actor }}'
-      admin-token:
-        description: 'The admin token to use for the action'
-        required: true
-        default: '${{ secrets.ADMIN_TOKEN }}'
-      organization:
-        description: 'The organization to create the private mirror in'
-        required: false
-        default: '${{ github.organization }}'
 
 jobs:
   test-action:
@@ -53,9 +41,9 @@ jobs:
         with:
           upstream-repo: ${{ github.event.inputs.upstream-repo }}
           private-mirror-name: ${{ github.event.inputs.private-mirror-name }}
-          actor: ${{ github.event.inputs.actor }}
-          admin-token: ${{ github.event.inputs.admin-token }}
-          organization: ${{ github.event.inputs.organization }}
+          actor: ${{ github.actor }}
+          admin-token: ${{ secrets.ADMIN_TOKEN }}
+          organization: ${{ github.organization }}
 
       # echo outputs
       - name: Check Outputs
@@ -72,7 +60,4 @@ jobs:
           gh repo delete ${{ steps.run-action.outputs.public-fork }} --yes
           gh repo delete ${{ steps.run-action.outputs.private-mirror }} --yes
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.event.inputs.actor }}
-          ADMIN_TOKEN: ${{ github.event.inputs.admin-token }}
-          ORGANIZATION: ${{ github.event.inputs.organization }}
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
