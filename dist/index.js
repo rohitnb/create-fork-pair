@@ -30926,21 +30926,6 @@ async function run() {
     const adminToken = coreExports.getInput('admin-token', { required: true });
     const organization = coreExports.getInput('organization', { required: true });
 
-    // Test if inputs are not null
-    const inputs = {
-      upstreamRepo,
-      privateMirrorName,
-      adminToken,
-      actor,
-      organization
-    };
-    for (const [key, value] of Object.entries(inputs)) {
-      if (value === 'null') {
-        coreExports.setFailed(`Input required and not supplied: ${key}`);
-        return
-      }
-    }
-
     // Example usage of inputs
     coreExports.debug(`Upstream Repo: ${upstreamRepo}`);
     coreExports.debug(`Private Mirror Name: ${privateMirrorName}`);
