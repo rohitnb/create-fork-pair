@@ -1,0 +1,78 @@
+# This workflow will be manually triggered to test the action
+
+name: Test Action
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream-repo:
+        description: 'The upstream repository to fork from. Format: owner/repo'
+        required: true
+        default: 'rohitnb/demo-public-001'
+      private-mirror-name:
+        description: 'The name for the private mirror'
+        required: true
+        default: 'demo-private-001'
+      actor:
+        description: 'The actor who triggered the workflow'
+        required: false
+        default: '${{ github.actor }}'
+      admin-token:
+        description: 'The admin token to use for the action'
+        required: true
+        default: '${{ secrets.ADMIN_TOKEN }}'
+      organization:
+        description: 'The organization to create the private mirror in'
+        required: false
+        default: '${{ github.organization }}'
+
+jobs:
+  test-action:
+    name: Test Action
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        id: setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install Dependencies
+        id: npm-ci
+        run: npm ci
+
+      - name: Run Action
+        id: run-action
+        uses: ./
+        with:
+          upstream-repo: ${{ github.event.inputs.upstream-repo }}
+          private-mirror-name: ${{ github.event.inputs.private-mirror-name }}
+          actor: ${{ github.event.inputs.actor }}
+          admin-token: ${{ github.event.inputs.admin-token }}
+          organization: ${{ github.event.inputs.organization }}
+
+      # echo outputs
+      - name: Check Outputs
+        id: check-outputs
+        run: |
+          echo "Public Fork: ${{ steps.run-action.outputs.public-fork }}"
+          echo "Private Mirror: ${{ steps.run-action.outputs.private-mirror }}"
+
+      # delete the public fork and private mirror
+      - name: Delete Public Fork
+        id: delete-public-fork
+        run: |
+          echo "Deleting public fork..."
+          gh repo delete ${{ steps.run-action.outputs.public-fork }} --yes
+          gh repo delete ${{ steps.run-action.outputs.private-mirror }} --yes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.event.inputs.actor }}
+          ADMIN_TOKEN: ${{ github.event.inputs.admin-token }}
+          ORGANIZATION: ${{ github.event.inputs.organization }}
