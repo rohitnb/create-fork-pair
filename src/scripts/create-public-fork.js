@@ -1,4 +1,4 @@
-import { Octokit } from "@octokit/rest";
+import { Octokit } from '@octokit/rest'
 
 /**
  * Creates a public fork of the upstream repository.
@@ -11,30 +11,32 @@ import { Octokit } from "@octokit/rest";
 export async function createPublicFork(upstreamRepo, adminToken, organization) {
   // Validate upstreamRepo format
   if (!/^[\w-]+\/[\w-]+$/.test(upstreamRepo)) {
-    throw new Error(`Invalid upstreamRepo format: ${upstreamRepo}. Expected format: owner/repo.`);
+    throw new Error(
+      `Invalid upstreamRepo format: ${upstreamRepo}. Expected format: owner/repo.`
+    )
   }
 
-  console.log(`Forking ${upstreamRepo} as a public fork in ${organization}...`);
+  console.log(`Forking ${upstreamRepo} as a public fork in ${organization}...`)
 
   // Extract owner and repo from upstreamRepo
-  const [owner, repo] = upstreamRepo.split("/");
+  const [owner, repo] = upstreamRepo.split('/')
 
   // Initialize Octokit with the admin token
-  const octokit = new Octokit({ auth: adminToken });
+  const octokit = new Octokit({ auth: adminToken })
 
   try {
     // Create the fork using Octokit
     const response = await octokit.repos.createFork({
       owner,
       repo,
-      organization,
-    });
+      organization
+    })
 
-    console.log(`Fork created successfully: ${response.data.full_name}`);
+    console.log(`Fork created successfully: ${response.data.full_name}`)
 
     // Return the public fork name
-    return response.data.full_name;
+    return response.data.full_name
   } catch (error) {
-    throw new Error(`Failed to create fork: ${error.message}`);
+    throw new Error(`Failed to create fork: ${error.message}`)
   }
 }

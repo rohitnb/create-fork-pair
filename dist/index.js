@@ -25,8 +25,9 @@ import require$$1$4 from 'url';
 import require$$3$1 from 'zlib';
 import require$$6 from 'string_decoder';
 import require$$0$9 from 'diagnostics_channel';
-import require$$2$2 from 'child_process';
+import require$$2$2, { exec as exec$1 } from 'child_process';
 import require$$6$1 from 'timers';
+import { Octokit } from '@octokit/rest';
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -27247,17 +27248,148 @@ function requireCore () {
 var coreExports = requireCore();
 
 /**
- * Waits for a number of milliseconds.
+ * Creates a public fork of the upstream repository.
  *
- * @param {number} milliseconds The number of milliseconds to wait.
- * @returns {Promise<string>} Resolves with 'done!' after the wait is over.
+ * @param {string} upstreamRepo The upstream repository to fork (format: owner/repo).
+ * @param {string} adminToken The admin token for authentication.
+ * @param {string} organization The organization to create the fork in.
+ * @returns {Promise<string>} Resolves with the public fork name.
  */
-async function wait(milliseconds) {
-  return new Promise((resolve) => {
-    if (isNaN(milliseconds)) throw new Error('milliseconds is not a number')
+async function createPublicFork(upstreamRepo, adminToken, organization) {
+  // Validate upstreamRepo format
+  if (!/^[\w-]+\/[\w-]+$/.test(upstreamRepo)) {
+    throw new Error(
+      `Invalid upstreamRepo format: ${upstreamRepo}. Expected format: owner/repo.`
+    )
+  }
 
-    setTimeout(() => resolve('done!'), milliseconds);
-  })
+  console.log(`Forking ${upstreamRepo} as a public fork in ${organization}...`);
+
+  // Extract owner and repo from upstreamRepo
+  const [owner, repo] = upstreamRepo.split('/');
+
+  // Initialize Octokit with the admin token
+  const octokit = new Octokit({ auth: adminToken });
+
+  try {
+    // Create the fork using Octokit
+    const response = await octokit.repos.createFork({
+      owner,
+      repo,
+      organization
+    });
+
+    console.log(`Fork created successfully: ${response.data.full_name}`);
+
+    // Return the public fork name
+    return response.data.full_name
+  } catch (error) {
+    throw new Error(`Failed to create fork: ${error.message}`)
+  }
+}
+
+/**
+ * Creates a public fork of the upstream repository.
+ *
+ * @param {string} privateMirrorName The upstream repository to fork (format: owner/repo).
+ * @param {string} adminToken The admin token for authentication.
+ * @param {string} organization The organization to create the fork in.
+ * @returns {Promise<string>} Resolves with the private mirror name.
+ */
+
+async function createRepo(privateMirrorName, adminToken, organization) {
+  // Validate privateMirrorName
+  // It is supposed to be an alphanumeric string with dashes and underscores
+  if (!/^[\w-]+$/.test(privateMirrorName)) {
+    throw new Error(`Invalid repository name: ${privateMirrorName}.`)
+  }
+
+  console.log(
+    `Creating private mirror ${privateMirrorName} for ${actor} in ${organization}...`
+  );
+
+  // Initialize Octokit with the admin token
+  const octokit = new Octokit({ auth: adminToken });
+
+  try {
+    // Create the repository using Octokit
+    const response = await octokit.rest.repos.createInOrg({
+      organization,
+      privateMirrorName
+    });
+
+    console.log(`Repository created successfully: ${response.data.full_name}`);
+
+    // Return the private mirror name
+    return response.data.full_name
+  } catch (error) {
+    throw new Error(`Failed to create repository: ${error.message}`)
+  }
+}
+
+/**
+ * Adds a repository admin to the private mirror.
+ *
+ * @param {string} actor The actor to be added as an admin.
+ * @param {string} privateMirrorName The name of the private mirror.
+ * @param {string} adminToken The admin token for authentication.
+ * @returns {Promise<boolean>} Resolves with true if the admin was added successfully.
+ */
+
+async function addRepoAdmin(actor, privateMirrorName, adminToken) {
+  console.log(`Adding ${actor} as a repo admin to ${privateMirrorName}...`);
+
+  // Initialize Octokit with the admin token
+  const octokit = new Octokit({ auth: adminToken });
+
+  try {
+    // Add the repo admin using Octokit
+    const response = await octokit.rest.repos.addCollaborator({
+      owner: privateMirrorName.split('/')[0],
+      repo: privateMirrorName.split('/')[1],
+      username: actor,
+      permission: 'admin'
+    });
+
+    console.log(`Admin added successfully`);
+
+    // Return Success message
+    return true
+  } catch (error) {
+    throw new Error(`Failed to add admin: ${error.message}`)
+  }
+}
+
+const execPromise = require$$0$2.promisify(exec$1);
+
+/**
+ * Checks out the public fork, adds the private mirror as a remote, and pushes to the private mirror.
+ *
+ * @param {string} publicFork The URL of the public fork.
+ * @param {string} privateMirror The URL of the private mirror.
+ * @returns {Promise<void>} Resolves when the operation is complete.
+ */
+async function syncForkToMirror(publicFork, privateMirror) {
+  try {
+    coreExports.debug(`Cloning the public fork: ${publicFork}`);
+    await execPromise(`git clone ${publicFork} repo`);
+
+    coreExports.debug(`Changing directory to the cloned repository`);
+    process.chdir('repo');
+
+    coreExports.debug(`Adding the private mirror as a remote`);
+    const privateMirrorUrl = `https://github.com/${privateMirror}.git`;
+    await execPromise(`git remote add privatemirror ${privateMirrorUrl}`);
+
+    coreExports.debug(`Pushing to the private mirror`);
+    await execPromise(`git push privatemirror --all`);
+    await execPromise(`git push privatemirror --tags`);
+
+    coreExports.debug(`Successfully pushed to the private mirror`);
+  } catch (error) {
+    coreExports.setFailed(`Failed to sync fork to mirror: ${error.message}`);
+    throw error
+  }
 }
 
 /**
@@ -27267,29 +27399,49 @@ async function wait(milliseconds) {
  */
 async function run() {
   try {
-    const ms = coreExports.getInput('milliseconds');
+    // Get the input parameters
+    const upstreamRepo = coreExports.getInput('upstream-repo', { required: true });
+    const privateMirrorName = coreExports.getInput('private-mirror-name', {
+      required: true
+    });
+    const actor = coreExports.getInput('actor', { required: true });
+    const adminToken = coreExports.getInput('admin-token', { required: true });
+    const organization = coreExports.getInput('organization', { required: true });
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    coreExports.debug(`Waiting ${ms} milliseconds ...`);
+    // Example usage of inputs
+    coreExports.debug(`Upstream Repo: ${upstreamRepo}`);
+    coreExports.debug(`Private Mirror Name: ${privateMirrorName}`);
+    coreExports.debug(`Actor: ${actor}`);
+    coreExports.debug(`Admin Token: ${adminToken}`);
+    coreExports.debug(`Organization: ${organization}`);
 
-    // Log the current timestamp, wait, then log the new timestamp
-    coreExports.debug(new Date().toTimeString());
-    await wait(parseInt(ms, 10));
-    coreExports.debug(new Date().toTimeString());
+    // call createPublicFork function
+    const publicFork = await createPublicFork(
+      upstreamRepo,
+      adminToken,
+      organization
+    );
+    coreExports.debug(`Public Fork: ${publicFork}`);
+    const privateMirror = await createRepo(
+      privateMirrorName,
+      adminToken,
+      organization
+    );
+    coreExports.debug(`Private Mirror: ${privateMirror}`);
+    // call syncForkToMirror function
+    await syncForkToMirror(publicFork, privateMirror);
+    coreExports.debug(`Sync Fork to Mirror: ${publicFork} to ${privateMirror}`);
+    const addAdmin = await addRepoAdmin(actor, privateMirror, adminToken);
+    coreExports.debug(`Add Admin: ${addAdmin}`);
 
-    // Set outputs for other workflow steps to use
-    coreExports.setOutput('time', new Date().toTimeString());
+    // Set outputs to be used in the workflow
+    coreExports.setOutput('public-fork', publicFork);
+    coreExports.setOutput('private-mirror', privateMirror);
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) coreExports.setFailed(error.message);
   }
 }
 
-/**
- * The entrypoint for the action. This file simply imports and runs the action's
- * main logic.
- */
-
-/* istanbul ignore next */
 run();
 //# sourceMappingURL=index.js.map

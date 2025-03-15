@@ -13,7 +13,9 @@ export async function run() {
   try {
     // Get the input parameters
     const upstreamRepo = core.getInput('upstream-repo', { required: true })
-    const privateMirrorName = core.getInput('private-mirror-name', { required: true })
+    const privateMirrorName = core.getInput('private-mirror-name', {
+      required: true
+    })
     const actor = core.getInput('actor', { required: true })
     const adminToken = core.getInput('admin-token', { required: true })
     const organization = core.getInput('organization', { required: true })
@@ -26,9 +28,17 @@ export async function run() {
     core.debug(`Organization: ${organization}`)
 
     // call createPublicFork function
-    const publicFork = await createPublicFork(upstreamRepo, adminToken, organization)
+    const publicFork = await createPublicFork(
+      upstreamRepo,
+      adminToken,
+      organization
+    )
     core.debug(`Public Fork: ${publicFork}`)
-    const privateMirror = await createRepo(privateMirrorName, adminToken, organization)
+    const privateMirror = await createRepo(
+      privateMirrorName,
+      adminToken,
+      organization
+    )
     core.debug(`Private Mirror: ${privateMirror}`)
     // call syncForkToMirror function
     await syncForkToMirror(publicFork, privateMirror)

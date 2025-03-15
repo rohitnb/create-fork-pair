@@ -1,4 +1,4 @@
-import { Octokit } from "@octokit/rest";
+import { Octokit } from '@octokit/rest'
 
 /**
  * Adds a repository admin to the private mirror.
@@ -10,26 +10,25 @@ import { Octokit } from "@octokit/rest";
  */
 
 export async function addRepoAdmin(actor, privateMirrorName, adminToken) {
-    console.log(`Adding ${actor} as a repo admin to ${privateMirrorName}...`);
-    
-    // Initialize Octokit with the admin token
-    const octokit = new Octokit({ auth: adminToken });
+  console.log(`Adding ${actor} as a repo admin to ${privateMirrorName}...`)
 
-    try {
-        // Add the repo admin using Octokit
-        const response = await octokit.rest.repos.addCollaborator({
-            owner: privateMirrorName.split("/")[0],
-            repo: privateMirrorName.split("/")[1],
-            username: actor,
-            permission: "admin"
-        });
+  // Initialize Octokit with the admin token
+  const octokit = new Octokit({ auth: adminToken })
 
-        console.log(`Admin added successfully`);
+  try {
+    // Add the repo admin using Octokit
+    const response = await octokit.rest.repos.addCollaborator({
+      owner: privateMirrorName.split('/')[0],
+      repo: privateMirrorName.split('/')[1],
+      username: actor,
+      permission: 'admin'
+    })
 
-        // Return Success message
-        return true;
-    } catch (error) {
-        throw new Error(`Failed to add admin: ${error.message}`);
-    }
+    console.log(`Admin added successfully`)
 
+    // Return Success message
+    return true
+  } catch (error) {
+    throw new Error(`Failed to add admin: ${error.message}`)
+  }
 }
