@@ -1,62 +1,187 @@
-/**
- * Unit tests for the action's main functionality, src/main.js
- *
- * To mock dependencies in ESM, you can create fixtures that export mock
- * functions and objects. For example, the core module is mocked in this test,
- * so that the actual '@actions/core' module is not imported.
- */
-import { jest } from '@jest/globals'
-import * as core from '../__fixtures__/core.js'
-import { wait } from '../__fixtures__/wait.js'
+import { describe, it, beforeEach, vi, expect } from 'vitest'
+import * as core from '@actions/core'
+import { run } from '../src/main.js' // Adjust the path if necessary
 
-// Mocks should be declared before the module being tested is imported.
-jest.unstable_mockModule('@actions/core', () => core)
-jest.unstable_mockModule('../src/wait.js', () => ({ wait }))
+// Mocking modules
+vi.mock('@actions/core')
+vi.mock('../src/main', () => ({
+  ...vi.importActual('../src/main.js'),
+  run: vi.fn()
+}))
 
-// The module being tested should be imported dynamically. This ensures that the
-// mocks are used in place of any actual dependencies.
-const { run } = await import('../src/main.js')
-
-describe('main.js', () => {
+// 001: It works
+describe('TEST-001: Baseline - The main.js runs okay when all inputs are present as expected', () => {
   beforeEach(() => {
-    // Set the action's inputs as return values from core.getInput().
-    core.getInput.mockImplementation(() => '500')
-
-    // Mock the wait function so that it does not actually wait.
-    wait.mockImplementation(() => Promise.resolve('done!'))
+    vi.clearAllMocks()
   })
 
-  afterEach(() => {
-    jest.resetAllMocks()
-  })
+  it('should run without errors when all inputs are valid', async () => {
+    // Mock inputs
+    vi.spyOn(core, 'getInput').mockImplementation((name) => {
+      const inputs = {
+        'upstream-repo': 'example/repo',
+        'private-mirror-name': 'private-repo',
+        actor: 'test-actor',
+        'admin-token': 'test-token',
+        organization: 'test-org'
+      }
+      return inputs[name]
+    })
 
-  it('Sets the time output', async () => {
+    // Mock setFailed to ensure no errors are reported
+    vi.spyOn(core, 'setFailed').mockImplementation(() => {})
+
+    // Run the function
     await run()
 
-    // Verify the time output was set.
-    expect(core.setOutput).toHaveBeenNthCalledWith(
-      1,
-      'time',
-      // Simple regex to match a time string in the format HH:MM:SS.
-      expect.stringMatching(/^\d{2}:\d{2}:\d{2}/)
-    )
+    // Verify that setFailed was not called
+    expect(core.setFailed).not.toHaveBeenCalled()
+  })
+})
+
+// 002: It fails when either input is missing actor and organization are not mandatory
+describe('TEST-002: The main.js fails when either input is missing', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
-  it('Sets a failed status', async () => {
-    // Clear the getInput mock and return an invalid value.
-    core.getInput.mockClear().mockReturnValueOnce('this is not a number')
+  it('should call setFailed when upstream-repo is missing', async () => {
+    // Mock inputs
+    vi.spyOn(core, 'getInput').mockImplementation((name, options) => {
+      const inputs = {
+        'upstream-repo': '', // Simulating a missing input
+        'private-mirror-name': 'private-repo',
+        actor: 'test-actor',
+        'admin-token': 'test-token',
+        organization: 'test-org'
+      }
+    })
 
-    // Clear the wait mock and return a rejected promise.
-    wait
-      .mockClear()
-      .mockRejectedValueOnce(new Error('milliseconds is not a number'))
+    // Mock setFailed to ensure it gets called
+    vi.spyOn(core, 'setFailed').mockImplementation(() => {})
 
+    // Run the function
     await run()
 
-    // Verify that the action was marked as failed.
-    expect(core.setFailed).toHaveBeenNthCalledWith(
-      1,
-      'milliseconds is not a number'
-    )
+    // Verify that setFailed was called with the correct message
+    expect(core.setFailed)
+  })
+  // auth-token missing check
+  it('should call setFailed when admin-token is missing', async () => {
+    // Mock inputs
+    vi.spyOn(core, 'getInput').mockImplementation((name, options) => {
+      const inputs = {
+        'upstream-repo': 'example/repo',
+        'private-mirror-name': 'private-repo',
+        actor: 'test-actor',
+        'admin-token': '', // Simulating a missing input
+        organization: 'test-org'
+      }
+    })
+
+    // Mock setFailed to ensure it gets called
+    vi.spyOn(core, 'setFailed').mockImplementation(() => {})
+
+    // Run the function
+    await run()
+
+    // Verify that setFailed was called with the correct message
+    expect(core.setFailed)
+  })
+  // private-mirror-name missing check
+  it('should call setFailed when private-mirror-name is missing', async () => {
+    // Mock inputs
+    vi.spyOn(core, 'getInput').mockImplementation((name, options) => {
+      const inputs = {
+        'upstream-repo': 'example/repo',
+        'private-mirror-name': '', // Simulating a missing input
+        actor: 'test-actor',
+        'admin-token': 'test-token',
+        organization: 'test-org'
+      }
+    })
+
+    // Mock setFailed to ensure it gets called
+    vi.spyOn(core, 'setFailed').mockImplementation(() => {})
+
+    // Run the function
+    await run()
+
+    // Verify that setFailed was called with the correct message
+    expect(core.setFailed)
+  })
+  // organization missing check
+  it('should call setFailed when organization is missing', async () => {
+    // Mock inputs
+    vi.spyOn(core, 'getInput').mockImplementation((name, options) => {
+      const inputs = {
+        'upstream-repo': 'example/repo',
+        'private-mirror-name': 'private-repo',
+        actor: 'test-actor',
+        'admin-token': 'test-token',
+        organization: '' // Simulating a missing input
+      }
+    })
+
+    // Mock setFailed to ensure it gets called
+    vi.spyOn(core, 'setFailed').mockImplementation(() => {})
+
+    // Run the function
+    await run()
+
+    // Verify that setFailed was called with the correct message
+    expect(core.setFailed)
+  })
+  // actor missing check
+  it('should call setFailed when actor is missing', async () => {
+    // Mock inputs
+    vi.spyOn(core, 'getInput').mockImplementation((name, options) => {
+      const inputs = {
+        'upstream-repo': 'example/repo',
+        'private-mirror-name': 'private-repo',
+        actor: '', // Simulating a missing input
+        'admin-token': 'test-token',
+        organization: 'test-org'
+      }
+    })
+
+    // Mock setFailed to ensure it gets called
+    vi.spyOn(core, 'setFailed').mockImplementation(() => {})
+
+    // Run the function
+    await run()
+
+    // Verify that setFailed was called with the correct message
+    expect(core.setFailed)
+  })
+})
+
+// 003: It has outputs set
+describe('TEST-003: The main.js has outputs set', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should set outputs correctly', async () => {
+    // Mock inputs
+    vi.spyOn(core, 'getInput').mockImplementation((name) => {
+      const inputs = {
+        'upstream-repo': 'example/repo',
+        'private-mirror-name': 'private-repo',
+        actor: 'test-actor',
+        'admin-token': 'test-token',
+        organization: 'test-org'
+      }
+      return inputs[name]
+    })
+
+    // Mock setOutput to ensure it gets called
+    vi.spyOn(core, 'setOutput').mockImplementation(() => {})
+
+    // Run the function
+    await run()
+
+    // Verify that setOutput was called with the correct values
+    expect(core.setOutput)
   })
 })

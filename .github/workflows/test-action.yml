@@ -1,0 +1,63 @@
+# This workflow will be manually triggered to test the action
+
+name: Test Action
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  test-action:
+    name: Test Action
+    runs-on: ubuntu-latest
+
+    env:
+      UPSTREAM_REPO: rohitnb/demo-public-001
+      PRIVATE_MIRROR_NAME: demo-private-001
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        id: setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install Dependencies
+        id: npm-ci
+        run: npm ci
+
+      - name: Run Action
+        id: run-action
+        uses: ./
+        with:
+          upstream-repo: ${{ env.UPSTREAM_REPO }}
+          private-mirror-name: ${{ env.PRIVATE_MIRROR_NAME }}
+          actor: ${{ github.actor }}
+          admin-token: ${{ secrets.ADMIN_TOKEN }}
+          organization: ${{ github.repository_owner }}
+
+      # echo outputs
+      - name: Check Outputs
+        id: check-outputs
+        run: |
+          echo "Public Fork: ${{ steps.run-action.outputs.public-fork }}"
+          echo "Private Mirror: ${{ steps.run-action.outputs.private-mirror }}"
+
+      # delete the public fork and private mirror
+      - name: Delete Public Fork
+        id: delete-public-fork
+        run: |
+          echo "Deleting public fork..."
+          gh repo delete ${{ steps.run-action.outputs.public-fork }} --yes
+          gh repo delete ${{ steps.run-action.outputs.private-mirror }} --yes
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}

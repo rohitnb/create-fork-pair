@@ -1,5 +1,10 @@
 import * as core from '@actions/core'
-import { wait } from './wait.js'
+import {
+  createPublicFork,
+  createRepo,
+  addRepoAdmin,
+  syncForkToMirror
+} from './scripts/scripts.js'
 
 /**
  * The main function for the action.
@@ -8,18 +13,51 @@ import { wait } from './wait.js'
  */
 export async function run() {
   try {
-    const ms = core.getInput('milliseconds')
+    // Get the input parameters
+    const upstreamRepo = core.getInput('upstream-repo', { required: true })
+    const privateMirrorName = core.getInput('private-mirror-name', {
+      required: true
+    })
+    const actor = core.getInput('actor', { required: true })
+    const adminToken = core.getInput('admin-token', { required: true })
+    const organization = core.getInput('organization', { required: true })
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    // Example usage of inputs
+    core.debug(`Upstream Repo: ${upstreamRepo}`)
+    core.debug(`Private Mirror Name: ${privateMirrorName}`)
+    core.debug(`Actor: ${actor}`)
+    core.debug(`Admin Token: ${adminToken}`)
+    core.debug(`Organization: ${organization}`)
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    // call createPublicFork function
+    const publicFork = await createPublicFork(
+      upstreamRepo,
+      adminToken,
+      organization
+    )
+    core.debug(`Public Fork: ${publicFork}`)
+    const privateMirrorNameWithOwner = await createRepo(
+      privateMirrorName,
+      adminToken,
+      organization
+    )
+    core.debug(`Private Mirror: ${privateMirrorNameWithOwner}`)
+    // call syncForkToMirror function
+    await syncForkToMirror(publicFork, privateMirrorNameWithOwner)
+    core.debug(
+      `Sync Fork to Mirror: ${publicFork} to ${privateMirrorNameWithOwner}`
+    )
 
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
+    const addAdmin = await addRepoAdmin(
+      actor,
+      privateMirrorNameWithOwner,
+      adminToken
+    )
+    core.debug(`Add Admin: ${addAdmin}`)
+
+    // Set outputs to be used in the workflow
+    core.setOutput('public-fork', publicFork)
+    core.setOutput('private-mirror', privateMirrorNameWithOwner)
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
