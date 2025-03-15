@@ -36,21 +36,28 @@ export async function run() {
       organization
     )
     core.debug(`Public Fork: ${publicFork}`)
-    const privateMirror = await createRepo(
+    const privateMirrorNameWithOwner = await createRepo(
       privateMirrorName,
       adminToken,
       organization
     )
-    core.debug(`Private Mirror: ${privateMirror}`)
+    core.debug(`Private Mirror: ${privateMirrorNameWithOwner}`)
     // call syncForkToMirror function
-    await syncForkToMirror(publicFork, privateMirror)
-    core.debug(`Sync Fork to Mirror: ${publicFork} to ${privateMirror}`)
-    const addAdmin = await addRepoAdmin(actor, privateMirror, adminToken)
+    await syncForkToMirror(publicFork, privateMirrorNameWithOwner)
+    core.debug(
+      `Sync Fork to Mirror: ${publicFork} to ${privateMirrorNameWithOwner}`
+    )
+
+    const addAdmin = await addRepoAdmin(
+      actor,
+      privateMirrorNameWithOwner,
+      adminToken
+    )
     core.debug(`Add Admin: ${addAdmin}`)
 
     // Set outputs to be used in the workflow
     core.setOutput('public-fork', publicFork)
-    core.setOutput('private-mirror', privateMirror)
+    core.setOutput('private-mirror', privateMirrorNameWithOwner)
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)

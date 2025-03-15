@@ -9,24 +9,36 @@ const execPromise = util.promisify(exec)
  * Adds a repository admin to the private mirror.
  *
  * @param {string} actor The actor to be added as an admin.
- * @param {string} privateMirrorName The name of the private mirror.
+ * @param {string} privateMirrorNameWithOwner The name of the private mirror.
  * @param {string} adminToken The admin token for authentication.
  * @returns {Promise<boolean>} Resolves with true if the admin was added successfully.
  */
-export async function addRepoAdmin(actor, privateMirrorName, adminToken) {
-  console.log(`Adding ${actor} as a repo admin to ${privateMirrorName}...`)
-
+export async function addRepoAdmin(
+  actor,
+  privateMirrorNameWithOwner,
+  adminToken
+) {
+  console.log(
+    `Adding ${actor} as a repo admin to ${privateMirrorNameWithOwner}...`
+  )
+  // Validate the format of privateMirrorNameWithOwner
+  if (!/^[\w-]+\/[\w-]+$/.test(privateMirrorNameWithOwner)) {
+    throw new Error(
+      `Invalid repository name: ${privateMirrorNameWithOwner}. Expected format: owner/repo.`
+    )
+  }
   const octokit = new Octokit({ auth: adminToken })
 
   try {
     await octokit.rest.repos.addCollaborator({
-      owner: privateMirrorName.split('/')[0],
-      repo: privateMirrorName.split('/')[1],
+      owner: privateMirrorNameWithOwner.split('/')[0],
+      repo: privateMirrorNameWithOwner.split('/')[1],
       username: actor,
       permission: 'admin'
     })
 
-    console.log(`Admin added successfully`)
+    console.log(`Admin added successfully to ${privateMirrorNameWithOwner}`)
+    core.debug(`Admin added successfully to ${privateMirrorNameWithOwner}`)
     return true
   } catch (error) {
     throw new Error(`Failed to add admin: ${error.message}`)
@@ -111,7 +123,7 @@ export async function syncForkToMirror(publicFork, privateMirror) {
   try {
     core.debug(`Cloning the public fork: ${publicFork}`)
     const publicForkUrl = `https://github.com/${publicFork}.git`
-    await execPromise(`git clone ${publicForkUrl}`)
+    await retryClone(publicForkUrl)
 
     core.debug(`Changing directory to the cloned repository`)
     const repoName = publicFork.split('/')[1]
@@ -137,5 +149,26 @@ export async function syncForkToMirror(publicFork, privateMirror) {
   } catch (error) {
     core.setFailed(`Failed to sync fork to mirror: ${error.message}`)
     throw error
+  }
+}
+
+/**
+ * Retries the git clone operation with a specified number of retries and delay.
+ * 
+
+ * @param {string} publicForkUrl The URL of the public fork to clone.
+ * @param {number} [retries=5] The number of retries for cloning.
+ * @param {number} [delay=3000] The delay between retries in milliseconds.
+ */
+async function retryClone(publicForkUrl, retries = 5, delay = 3000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await execPromise(`git clone ${publicForkUrl}`)
+      return
+    } catch (error) {
+      if (i === retries - 1) throw error
+      console.log(`Retrying clone... (${i + 1}/${retries})`)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
   }
 }
