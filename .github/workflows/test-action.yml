@@ -4,6 +4,16 @@ name: Test Action
 
 on:
   workflow_dispatch:
+    inputs:
+      upstream-repo:
+        description: 'Upstream repository to fork'
+        required: true
+      private-mirror-name:
+        description: 'Private mirror name'
+        required: true
+      repo-owner:
+        description: 'Repo Owner'
+        required: true
 
 permissions:
   contents: read
@@ -14,10 +24,6 @@ jobs:
   test-action:
     name: Test Action
     runs-on: ubuntu-latest
-
-    env:
-      UPSTREAM_REPO: rohitnb/demo-public-001
-      PRIVATE_MIRROR_NAME: demo-private-001
 
     steps:
       - name: Checkout
@@ -39,11 +45,11 @@ jobs:
         id: run-action
         uses: ./
         with:
-          upstream-repo: ${{ env.UPSTREAM_REPO }}
-          private-mirror-name: ${{ env.PRIVATE_MIRROR_NAME }}
+          upstream-repo: ${{ github.event.inputs.upstream-repo }}
+          private-mirror-name: ${{ github.event.inputs.private-mirror-name }}
           actor: ${{ github.actor }}
           admin-token: ${{ secrets.ADMIN_TOKEN }}
-          organization: 'rohitnb-labs'
+          organization: ${{ github.event.inputs.repo-owner }}
 
       # echo outputs
       - name: Check Outputs
