@@ -17,7 +17,7 @@ export async function createRepo(privateMirrorName, adminToken, organization) {
   }
 
   console.log(
-    `Creating private mirror ${privateMirrorName} for ${actor} in ${organization}...`
+    `Creating private mirror ${privateMirrorName} in ${organization}...`
   )
 
   // Initialize Octokit with the admin token
@@ -26,8 +26,9 @@ export async function createRepo(privateMirrorName, adminToken, organization) {
   try {
     // Create the repository using Octokit
     const response = await octokit.rest.repos.createInOrg({
-      organization,
-      privateMirrorName
+      org: organization,
+      name: privateMirrorName,
+      visibility: 'private'
     })
 
     console.log(`Repository created successfully: ${response.data.full_name}`)

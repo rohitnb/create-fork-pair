@@ -14,14 +14,19 @@ const execPromise = util.promisify(exec)
 export async function syncForkToMirror(publicFork, privateMirror) {
   try {
     core.debug(`Cloning the public fork: ${publicFork}`)
-    await execPromise(`git clone ${publicFork} repo`)
+    const publicForkUrl = `https://github.com/${publicFork}.git`
+    await execPromise(`git clone ${publicForkUrl}`)
 
     core.debug(`Changing directory to the cloned repository`)
-    process.chdir('repo')
+    const repoName = publicFork.split('/')[1]
+    process.chdir(repoName)
 
     core.debug(`Adding the private mirror as a remote`)
     const privateMirrorUrl = `https://github.com/${privateMirror}.git`
     await execPromise(`git remote add privatemirror ${privateMirrorUrl}`)
+    // run git remote -v
+    const { stdout: remoteOutput } = await execPromise(`git remote -v`)
+    core.debug(`Remote output: ${remoteOutput}`)
 
     core.debug(`Pushing to the private mirror`)
     await execPromise(`git push privatemirror --all`)
