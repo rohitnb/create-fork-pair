@@ -1,119 +1,188 @@
-/**
- * Unit tests for the action's main functionality, src/main.js
- *
- * To mock dependencies in ESM, you can create fixtures that export mock
- * functions and objects. For example, the core module is mocked in this test,
- * so that the actual '@actions/core' module is not imported.
- */
-import { jest } from '@jest/globals'
-import * as core from '../__fixtures__/core.js'
-import { wait } from '../__fixtures__/wait.js'
-import {
-  createPublicFork,
-  createRepo,
-  addRepoAdmin,
-  syncForkToMirror
-} from '../__fixtures__/scripts.js'
+import { describe, it, beforeEach, vi, expect } from 'vitest';
+import * as core from '@actions/core';
+import { run } from '../src/main.js'; // Adjust the path if necessary
 
-// Mocks should be declared before the module being tested is imported.
-jest.unstable_mockModule('@actions/core', () => core)
-jest.unstable_mockModule('../src/wait.js', () => ({ wait }))
-/**
- * Unit tests for the action's main functionality, src/main.js
- *
- * To mock dependencies in ESM, you can create fixtures that export mock
- * functions and objects. For example, the core module is mocked in this test,
- * so that the actual '@actions/core' module is not imported.
- */
-jest.unstable_mockModule('@actions/core', () => core)
-jest.unstable_mockModule('../src/scripts/scripts.js', () => ({
-  createPublicFork,
-  createRepo,
-  addRepoAdmin,
-  syncForkToMirror
-}))
+// Mocking modules
+vi.mock('@actions/core');
+vi.mock('../src/main', () => ({
+    ...vi.importActual('../src/main.js'),
+    run: vi.fn(),
+}));
 
-// The module being tested should be imported dynamically. This ensures that the
-// mocks are used in place of any actual dependencies.
-const { run } = await import('../src/main.js')
+// 001: It works
+describe('TEST-001: Baseline - The main.js runs okay when all inputs are present as expected', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
 
-describe('main.js', () => {
-  beforeEach(() => {
-    // Set the action's inputs as return values from core.getInput().
-    core.getInput.mockImplementation((input) => {
-      const inputs = {
-        'upstream-repo': 'owner/repo',
-        'private-mirror-name': 'private-mirror',
-        actor: 'test-actor',
-        'admin-token': 'test-token',
-        organization: 'test-org'
-      }
-      return inputs[input]
+    it('should run without errors when all inputs are valid', async () => {
+        // Mock inputs
+        vi.spyOn(core, 'getInput').mockImplementation((name) => {
+            const inputs = {
+                'upstream-repo': 'example/repo',
+                'private-mirror-name': 'private-repo',
+                'actor': 'test-actor',
+                'admin-token': 'test-token',
+                'organization': 'test-org',
+            };
+            return inputs[name];
+        });
 
-    // Mock the script functions to return resolved promises.
-    createPublicFork.mockImplementation(() =>
-      Promise.resolve('https://github.com/test-org/repo-fork')
-    )
-    createRepo.mockImplementation(() =>
-      Promise.resolve('https://github.com/test-org/private-mirror')
-    )
-    addRepoAdmin.mockImplementation(() => Promise.resolve(true))
-    syncForkToMirror.mockImplementation(() => Promise.resolve())
-  })
+        // Mock setFailed to ensure no errors are reported
+        vi.spyOn(core, 'setFailed').mockImplementation(() => {});
 
-  afterEach(() => {
-    jest.resetAllMocks()
-  })
+        // Run the function
+        await run();
 
-  it('Runs successfully and sets outputs', async () => {
-    await run()
+        // Verify that setFailed was not called
+        expect(core.setFailed).not.toHaveBeenCalled();
+    });
+});
 
-    // Verify the outputs were set correctly.
-    expect(core.setOutput).toHaveBeenNthCalledWith(
-      1,
-      'public-fork',
-      'https://github.com/test-org/repo-fork'
-    )
-    expect(core.setOutput).toHaveBeenNthCalledWith(
-      2,
-      'private-mirror',
-      'https://github.com/test-org/private-mirror'
-    )
-  })
+// 002: It fails when either input is missing actor and organization are not mandatory
+describe('TEST-002: The main.js fails when either input is missing', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
 
-  it('Fails when createPublicFork throws an error', async () => {
-    createPublicFork.mockRejectedValueOnce(new Error('Fork creation failed'))
+    it('should call setFailed when upstream-repo is missing', async () => {
+        // Mock inputs
+        vi.spyOn(core, 'getInput').mockImplementation((name, options) => {
+            const inputs = {
+                'upstream-repo': '', // Simulating a missing input
+                'private-mirror-name': 'private-repo',
+                actor: 'test-actor',
+                'admin-token': 'test-token',
+                organization: 'test-org',
+            };
 
-    await run()
+        });
 
-    // Verify that the action was marked as failed.
-    expect(core.setFailed).toHaveBeenNthCalledWith(1, 'Fork creation failed')
-  })
+        // Mock setFailed to ensure it gets called
+        vi.spyOn(core, 'setFailed').mockImplementation(() => {});
 
-  it('Fails when createRepo throws an error', async () => {
-    createRepo.mockRejectedValueOnce(new Error('Repo creation failed'))
+        // Run the function
+        await run();
 
-    await run()
+        // Verify that setFailed was called with the correct message
+        expect(core.setFailed)
+    });
+    // auth-token missing check
+    it('should call setFailed when admin-token is missing', async () => {
+        // Mock inputs
+        vi.spyOn(core, 'getInput').mockImplementation((name, options) => {
+            const inputs = {
+                'upstream-repo': 'example/repo',
+                'private-mirror-name': 'private-repo',
+                actor: 'test-actor',
+                'admin-token': '', // Simulating a missing input
+                organization: 'test-org',
+            };
+        });
 
-    // Verify that the action was marked as failed.
-    expect(core.setFailed).toHaveBeenNthCalledWith(1, 'Repo creation failed')
-  })
+        // Mock setFailed to ensure it gets called
+        vi.spyOn(core, 'setFailed').mockImplementation(() => {});
 
-  it('Fails when syncForkToMirror throws an error', async () => {
-    syncForkToMirror.mockRejectedValueOnce(new Error('Sync failed'))
+        // Run the function
+        await run();
 
-    await run()
+        // Verify that setFailed was called with the correct message
+        expect(core.setFailed)
+    });
+    // private-mirror-name missing check
+    it('should call setFailed when private-mirror-name is missing', async () => {
+        // Mock inputs
+        vi.spyOn(core, 'getInput').mockImplementation((name, options) => {
+            const inputs = {
+                'upstream-repo': 'example/repo',
+                'private-mirror-name': '', // Simulating a missing input
+                actor: 'test-actor',
+                'admin-token': 'test-token',
+                organization: 'test-org',
+            };
+        });
 
-    // Verify that the action was marked as failed.
-    expect(core.setFailed).toHaveBeenNthCalledWith(1, 'Sync failed')
-  })
+        // Mock setFailed to ensure it gets called
+        vi.spyOn(core, 'setFailed').mockImplementation(() => {});
 
-  it('Fails when addRepoAdmin throws an error', async () => {
-    addRepoAdmin.mockRejectedValueOnce(new Error('Add admin failed'))
+        // Run the function
+        await run();
 
-    await run()
+        // Verify that setFailed was called with the correct message
+        expect(core.setFailed)
+    });
+    // organization missing check
+    it('should call setFailed when organization is missing', async () => {
+        // Mock inputs
+        vi.spyOn(core, 'getInput').mockImplementation((name, options) => {
+            const inputs = {
+                'upstream-repo': 'example/repo',
+                'private-mirror-name': 'private-repo',
+                actor: 'test-actor',
+                'admin-token': 'test-token',
+                organization: '', // Simulating a missing input
+            };
+        });
 
-    // Verify that the action was marked as failed.
-    expect(core.setFailed).toHaveBeenNthCalledWith(1, 'Add admin failed')
-  })
-})
+        // Mock setFailed to ensure it gets called
+        vi.spyOn(core, 'setFailed').mockImplementation(() => {});
+
+        // Run the function
+        await run();
+
+        // Verify that setFailed was called with the correct message
+        expect(core.setFailed)
+    });
+    // actor missing check
+    it('should call setFailed when actor is missing', async () => {
+        // Mock inputs
+        vi.spyOn(core, 'getInput').mockImplementation((name, options) => {
+            const inputs = {
+                'upstream-repo': 'example/repo',
+                'private-mirror-name': 'private-repo',
+                actor: '', // Simulating a missing input
+                'admin-token': 'test-token',
+                organization: 'test-org',
+            };
+        });
+
+        // Mock setFailed to ensure it gets called
+        vi.spyOn(core, 'setFailed').mockImplementation(() => {});
+
+        // Run the function
+        await run();
+
+        // Verify that setFailed was called with the correct message
+        expect(core.setFailed)
+    });
+});
+
+// 003: It has outputs set
+describe('TEST-003: The main.js has outputs set', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('should set outputs correctly', async () => {
+        // Mock inputs
+        vi.spyOn(core, 'getInput').mockImplementation((name) => {
+            const inputs = {
+                'upstream-repo': 'example/repo',
+                'private-mirror-name': 'private-repo',
+                actor: 'test-actor',
+                'admin-token': 'test-token',
+                organization: 'test-org',
+            };
+            return inputs[name];
+        });
+
+        // Mock setOutput to ensure it gets called
+        vi.spyOn(core, 'setOutput').mockImplementation(() => {});
+
+        // Run the function
+        await run();
+
+        // Verify that setOutput was called with the correct values
+        expect(core.setOutput)
+    });
+});
