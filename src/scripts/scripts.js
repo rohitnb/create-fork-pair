@@ -139,6 +139,9 @@ export async function syncForkToMirror(publicFork, privateMirror, adminToken) {
     core.debug(`Changing directory to the cloned repository`)
     const repoName = publicFork.split('/')[1]
     process.chdir(repoName)
+    // list the files in the directory
+    core.debug(`Current directory: ${process.cwd()}`)
+    core.debug(`Files in the directory: ${await execPromise('ls -la')}`)
 
     core.debug(`Adding the private mirror as a remote`)
     const privateMirrorUrl = `https://github.com/${privateMirror}.git`
