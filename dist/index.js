@@ -30773,85 +30773,7 @@ const Octokit = Octokit$1.plugin(requestLog, legacyRestEndpointMethods, paginate
   }
 );
 
-/**
- * Creates a public fork of the upstream repository.
- *
- * @param {string} upstreamRepo The upstream repository to fork (format: owner/repo).
- * @param {string} adminToken The admin token for authentication.
- * @param {string} organization The organization to create the fork in.
- * @returns {Promise<string>} Resolves with the public fork name.
- */
-async function createPublicFork(upstreamRepo, adminToken, organization) {
-  // Validate upstreamRepo format
-  if (!/^[\w-]+\/[\w-]+$/.test(upstreamRepo)) {
-    throw new Error(
-      `Invalid upstreamRepo format: ${upstreamRepo}. Expected format: owner/repo.`
-    )
-  }
-
-  console.log(`Forking ${upstreamRepo} as a public fork in ${organization}...`);
-
-  // Extract owner and repo from upstreamRepo
-  const [owner, repo] = upstreamRepo.split('/');
-
-  // Initialize Octokit with the admin token
-  const octokit = new Octokit({ auth: adminToken });
-
-  try {
-    // Create the fork using Octokit
-    const response = await octokit.repos.createFork({
-      owner,
-      repo,
-      organization
-    });
-
-    console.log(`Fork created successfully: ${response.data.full_name}`);
-
-    // Return the public fork name
-    return response.data.full_name
-  } catch (error) {
-    throw new Error(`Failed to create fork: ${error.message}`)
-  }
-}
-
-/**
- * Creates a public fork of the upstream repository.
- *
- * @param {string} privateMirrorName The upstream repository to fork (format: owner/repo).
- * @param {string} adminToken The admin token for authentication.
- * @param {string} organization The organization to create the fork in.
- * @returns {Promise<string>} Resolves with the private mirror name.
- */
-
-async function createRepo(privateMirrorName, adminToken, organization) {
-  // Validate privateMirrorName
-  // It is supposed to be an alphanumeric string with dashes and underscores
-  if (!/^[\w-]+$/.test(privateMirrorName)) {
-    throw new Error(`Invalid repository name: ${privateMirrorName}.`)
-  }
-
-  console.log(
-    `Creating private mirror ${privateMirrorName} for ${actor} in ${organization}...`
-  );
-
-  // Initialize Octokit with the admin token
-  const octokit = new Octokit({ auth: adminToken });
-
-  try {
-    // Create the repository using Octokit
-    const response = await octokit.rest.repos.createInOrg({
-      organization,
-      privateMirrorName
-    });
-
-    console.log(`Repository created successfully: ${response.data.full_name}`);
-
-    // Return the private mirror name
-    return response.data.full_name
-  } catch (error) {
-    throw new Error(`Failed to create repository: ${error.message}`)
-  }
-}
+const execPromise = require$$0$2.promisify(exec$1);
 
 /**
  * Adds a repository admin to the private mirror.
@@ -30861,16 +30783,13 @@ async function createRepo(privateMirrorName, adminToken, organization) {
  * @param {string} adminToken The admin token for authentication.
  * @returns {Promise<boolean>} Resolves with true if the admin was added successfully.
  */
-
 async function addRepoAdmin(actor, privateMirrorName, adminToken) {
   console.log(`Adding ${actor} as a repo admin to ${privateMirrorName}...`);
 
-  // Initialize Octokit with the admin token
   const octokit = new Octokit({ auth: adminToken });
 
   try {
-    // Add the repo admin using Octokit
-    const response = await octokit.rest.repos.addCollaborator({
+    await octokit.rest.repos.addCollaborator({
       owner: privateMirrorName.split('/')[0],
       repo: privateMirrorName.split('/')[1],
       username: actor,
@@ -30878,18 +30797,81 @@ async function addRepoAdmin(actor, privateMirrorName, adminToken) {
     });
 
     console.log(`Admin added successfully`);
-
-    // Return Success message
     return true
   } catch (error) {
     throw new Error(`Failed to add admin: ${error.message}`)
   }
 }
 
-const execPromise = require$$0$2.promisify(exec$1);
+/**
+ * Creates a private repository in the specified organization.
+ *
+ * @param {string} privateMirrorName The name of the private repository.
+ * @param {string} adminToken The admin token for authentication.
+ * @param {string} organization The organization to create the repository in.
+ * @returns {Promise<string>} Resolves with the private mirror name.
+ */
+async function createRepo(privateMirrorName, adminToken, organization) {
+  if (!/^[\w-]+$/.test(privateMirrorName)) {
+    throw new Error(`Invalid repository name: ${privateMirrorName}.`)
+  }
+
+  console.log(
+    `Creating private mirror ${privateMirrorName} in ${organization}...`
+  );
+
+  const octokit = new Octokit({ auth: adminToken });
+
+  try {
+    const response = await octokit.rest.repos.createInOrg({
+      org: organization,
+      name: privateMirrorName,
+      visibility: 'private'
+    });
+
+    console.log(`Repository created successfully: ${response.data.full_name}`);
+    return response.data.full_name
+  } catch (error) {
+    throw new Error(`Failed to create repository: ${error.message}`)
+  }
+}
 
 /**
- * Checks out the public fork, adds the private mirror as a remote, and pushes to the private mirror.
+ * Creates a public fork of the upstream repository.
+ *
+ * @param {string} upstreamRepo The upstream repository to fork (format: owner/repo).
+ * @param {string} adminToken The admin token for authentication.
+ * @param {string} organization The organization to create the fork in.
+ * @returns {Promise<string>} Resolves with the public fork name.
+ */
+async function createPublicFork(upstreamRepo, adminToken, organization) {
+  if (!/^[\w-]+\/[\w-]+$/.test(upstreamRepo)) {
+    throw new Error(
+      `Invalid upstreamRepo format: ${upstreamRepo}. Expected format: owner/repo.`
+    )
+  }
+
+  console.log(`Forking ${upstreamRepo} as a public fork in ${organization}...`);
+
+  const [owner, repo] = upstreamRepo.split('/');
+  const octokit = new Octokit({ auth: adminToken });
+
+  try {
+    const response = await octokit.repos.createFork({
+      owner,
+      repo,
+      organization
+    });
+
+    console.log(`Fork created successfully: ${response.data.full_name}`);
+    return response.data.full_name
+  } catch (error) {
+    throw new Error(`Failed to create fork: ${error.message}`)
+  }
+}
+
+/**
+ * Syncs a public fork to a private mirror.
  *
  * @param {string} publicFork The URL of the public fork.
  * @param {string} privateMirror The URL of the private mirror.
@@ -30898,14 +30880,19 @@ const execPromise = require$$0$2.promisify(exec$1);
 async function syncForkToMirror(publicFork, privateMirror) {
   try {
     coreExports.debug(`Cloning the public fork: ${publicFork}`);
-    await execPromise(`git clone ${publicFork} repo`);
+    const publicForkUrl = `https://github.com/${publicFork}.git`;
+    await execPromise(`git clone ${publicForkUrl}`);
 
     coreExports.debug(`Changing directory to the cloned repository`);
-    process.chdir('repo');
+    const repoName = publicFork.split('/')[1];
+    process.chdir(repoName);
 
     coreExports.debug(`Adding the private mirror as a remote`);
     const privateMirrorUrl = `https://github.com/${privateMirror}.git`;
     await execPromise(`git remote add privatemirror ${privateMirrorUrl}`);
+
+    const { stdout: remoteOutput } = await execPromise(`git remote -v`);
+    coreExports.debug(`Remote output: ${remoteOutput}`);
 
     coreExports.debug(`Pushing to the private mirror`);
     await execPromise(`git push privatemirror --all`);

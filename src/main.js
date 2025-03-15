@@ -1,8 +1,10 @@
 import * as core from '@actions/core'
-import { createPublicFork } from './scripts/create-public-fork.js'
-import { createRepo } from './scripts/create-repo.js'
-import { addRepoAdmin } from './scripts/add-repo-admin.js'
-import { syncForkToMirror } from './scripts/sync-fork-to-mirror.js'
+import {
+  createPublicFork,
+  createRepo,
+  addRepoAdmin,
+  syncForkToMirror
+} from './scripts/scripts.js'
 
 /**
  * The main function for the action.
