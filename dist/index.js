@@ -30899,6 +30899,11 @@ async function syncForkToMirror(publicFork, privateMirror) {
     await execPromise(`git push privatemirror --tags`);
 
     coreExports.debug(`Successfully pushed to the private mirror`);
+
+    coreExports.debug(`Cleaning up the cloned repository`);
+    await execPromise(`cd .. && rm -rf ${repoName}`);
+    coreExports.debug(`Cleaned up the cloned repository`);
+    coreExports.debug(`Fork ${publicFork} synced to mirror ${privateMirror}`);
   } catch (error) {
     coreExports.setFailed(`Failed to sync fork to mirror: ${error.message}`);
     throw error

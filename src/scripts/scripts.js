@@ -129,6 +129,11 @@ export async function syncForkToMirror(publicFork, privateMirror) {
     await execPromise(`git push privatemirror --tags`)
 
     core.debug(`Successfully pushed to the private mirror`)
+
+    core.debug(`Cleaning up the cloned repository`)
+    await execPromise(`cd .. && rm -rf ${repoName}`)
+    core.debug(`Cleaned up the cloned repository`)
+    core.debug(`Fork ${publicFork} synced to mirror ${privateMirror}`)
   } catch (error) {
     core.setFailed(`Failed to sync fork to mirror: ${error.message}`)
     throw error
