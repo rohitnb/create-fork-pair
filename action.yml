@@ -1,23 +1,41 @@
-name: The name of your action here
-description: Provide a description here
-author: Your name or organization here
+name: Create Fork Pair
+description: Create a fork pair - a public fork and a private fork
+author: rohitnb
 
 # Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
   icon: heart
   color: red
 
-# Define your inputs here.
+# Inputs
 inputs:
-  milliseconds:
-    description: Your input description here
+  upstream-repo:
+    description: 'The upstream repository to fork from. Format: owner/repo'
     required: true
-    default: '1000'
+    default: 'null'
+  private-mirror-name:
+    description: 'The name of the private mirror. Format: repo-name'
+    required: true
+    default: 'null'
+  actor:
+    description: 'The actor who triggered the workflow'
+    required: false
+    default: '${{ github.actor }}'
+  admin-token:
+    description: 'The admin token to use for the action'
+    required: true
+    default: 'null'
+  organization:
+    description: 'The organization to create the private mirror in'
+    required: false
+    default: '${{ github.organization }}'
 
-# Define your outputs here.
+# Outputs
 outputs:
-  time:
-    description: Your output description here
+  public-fork: # id of output
+    description: 'The public fork created. Format: owner/repo'
+  private-mirror: # id of output
+    description: 'The private mirror created. Format: owner/repo'
 
 runs:
   using: node20
