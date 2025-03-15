@@ -43,7 +43,7 @@ jobs:
           private-mirror-name: ${{ env.PRIVATE_MIRROR_NAME }}
           actor: ${{ github.actor }}
           admin-token: ${{ secrets.ADMIN_TOKEN }}
-          organization: ${{ github.repository_owner }}
+          organization: 'rohitnb-labs'
 
       # echo outputs
       - name: Check Outputs
