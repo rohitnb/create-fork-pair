@@ -32,14 +32,14 @@ sourced repository.
 | --------------------- | ---------------------------------------------------------------------------------- | ------------ | ----------------------------- |
 | `upstream-repo`       | Name of the open source repository that you want to fork. Format: `owner/repo`     | Yes          | `null`                        |
 | `private-mirror-name` | Name of the private repository. Format: `repo-name`                                | Yes          | `null`                        |
-| `actor`               | The user who will be the owner of the private-mirror repository                          | No           | `${{ github.actor }}`         |
+| `actor`               | The user who will be the owner of the private-mirror repository                    | No           | `${{ github.actor }}`         |
 | `admin-token`         | GitHub Token with the required scopes to create a repository in the organization   | Yes          | `null`                        |
 | `organization`        | The organization where the upstream-repo and the private-mirror will be created in | No           | `${{ github.organization }}`  |
 
 ### Outputs
 
-| **Output**       | **Description**                         |
-| ---------------- | --------------------------------------- |
+| **Output**       | **Description**                           |
+| ---------------- | ----------------------------------------- |
 | `public-fork`    | Public fork name. Format: 'OWNER/REPO'    |
 | `private-mirror` | Private mirror name. Format: 'OWNER/REPO' |
 
