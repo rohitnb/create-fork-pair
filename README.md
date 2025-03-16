@@ -69,17 +69,14 @@ without needing to host an app.
 
 2. Create a `.env` file
 
-> ACTIONS_STEP_DEBUG=true
->
-> INPUT_upstream-repo=OWNER/REPO
->
-> INPUT_private-mirror-name=REPO-NAME
->
-> INPUT_actor=<Your GitHub Handle>
->
-> INPUT_admin-token=<Your GitHub Token>
->
-> INPUT_organization=<Org Name>
+```
+ACTIONS_STEP_DEBUG=true
+INPUT_upstream-repo=OWNER/REPO
+INPUT_private-mirror-name=REPO-NAME
+INPUT_actor=<Your GitHub Handle>
+INPUT_admin-token=<Your GitHub Token>
+INPUT_organization=<Org Name>
+```
 
 3. The [`@github/local-action`](https://github.com/github/local-action) utility
    can be used to test your action locally. It is a simple command-line tool
