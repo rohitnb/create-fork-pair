@@ -6,11 +6,17 @@
 GitHub Action to create a Public Fork and a Private Mirror of an upstream open
 sourced repository.
 
-- _Public Fork_: Is a direct fork of an upstream repository and is used to
+- **Public Fork**: Is a direct fork of an upstream repository and is used to
   contribute to the upstream repository
-- _Private Mirror_: A private copy of the Public Fork. It can be used to invite
-  contribution from your organization and also run checks that are relevant to
-  your organization.
+- **Private Mirror**: A private copy of the Public Fork. It can be used to
+  invite contribution from your organization and also run checks that are
+  relevant to your organization.
+
+Based on the workflow defined in
+[GitHub's Private Mirror App](https://github.com/github-community-projects/private-mirrors?tab=readme-ov-file#key-features).
+
+Using this Action with IssueOps would help you to get some of PMA's capabilities
+without needing to host an app.
 
 ## Usage
 
