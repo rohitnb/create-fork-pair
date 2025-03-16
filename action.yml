@@ -4,8 +4,8 @@ author: rohitnb
 
 # Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
-  icon: heart
-  color: red
+  icon: copy
+  color: green
 
 # Inputs
 inputs:
