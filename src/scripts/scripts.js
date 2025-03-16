@@ -117,10 +117,21 @@ export async function createPublicFork(upstreamRepo, adminToken, organization) {
  *
  * @param {string} publicFork The URL of the public fork.
  * @param {string} privateMirror The URL of the private mirror.
+ * @param {string} adminToken The admin token for authentication.
  * @returns {Promise<void>} Resolves when the operation is complete.
  */
-export async function syncForkToMirror(publicFork, privateMirror) {
+export async function syncForkToMirror(publicFork, privateMirror, adminToken) {
   try {
+    // Set up Git credentials
+    core.debug(`Setting up Git credentials`)
+    await execPromise(`git config --global user.name "github-actions[bot]"`)
+    await execPromise(
+      `git config --global user.email "github-actions[bot]@users.noreply.github.com"`
+    )
+    await execPromise(
+      `git config --global credential.helper '!f() { echo "username=x-access-token"; echo "password=${adminToken}"; }; f'`
+    )
+
     core.debug(`Cloning the public fork: ${publicFork}`)
     const publicForkUrl = `https://github.com/${publicFork}.git`
     await retryClone(publicForkUrl)
@@ -128,6 +139,9 @@ export async function syncForkToMirror(publicFork, privateMirror) {
     core.debug(`Changing directory to the cloned repository`)
     const repoName = publicFork.split('/')[1]
     process.chdir(repoName)
+    // list the files in the directory
+    core.debug(`Current directory: ${process.cwd()}`)
+    core.debug(`Files in the directory: ${await execPromise('ls -la')}`)
 
     core.debug(`Adding the private mirror as a remote`)
     const privateMirrorUrl = `https://github.com/${privateMirror}.git`
@@ -143,11 +157,16 @@ export async function syncForkToMirror(publicFork, privateMirror) {
     core.debug(`Successfully pushed to the private mirror`)
 
     core.debug(`Cleaning up the cloned repository`)
-    await execPromise(`cd .. && rm -rf ${repoName}`)
-    core.debug(`Cleaned up the cloned repository`)
+    try {
+      await execPromise(`[ -d "${repoName}" ] && rm -rf ${repoName}`)
+      core.debug(`Cleaned up the cloned repository`)
+    } catch (error) {
+      core.debug(`No repository directory found to clean up: ${repoName}`)
+    }
     core.debug(`Fork ${publicFork} synced to mirror ${privateMirror}`)
   } catch (error) {
     core.setFailed(`Failed to sync fork to mirror: ${error.message}`)
+    core.error(error.stack)
     throw error
   }
 }

@@ -43,7 +43,7 @@ export async function run() {
     )
     core.debug(`Private Mirror: ${privateMirrorNameWithOwner}`)
     // call syncForkToMirror function
-    await syncForkToMirror(publicFork, privateMirrorNameWithOwner)
+    await syncForkToMirror(publicFork, privateMirrorNameWithOwner, adminToken)
     core.debug(
       `Sync Fork to Mirror: ${publicFork} to ${privateMirrorNameWithOwner}`
     )

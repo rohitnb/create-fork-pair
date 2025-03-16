@@ -30887,10 +30887,21 @@ async function createPublicFork(upstreamRepo, adminToken, organization) {
  *
  * @param {string} publicFork The URL of the public fork.
  * @param {string} privateMirror The URL of the private mirror.
+ * @param {string} adminToken The admin token for authentication.
  * @returns {Promise<void>} Resolves when the operation is complete.
  */
-async function syncForkToMirror(publicFork, privateMirror) {
+async function syncForkToMirror(publicFork, privateMirror, adminToken) {
   try {
+    // Set up Git credentials
+    coreExports.debug(`Setting up Git credentials`);
+    await execPromise(`git config --global user.name "github-actions[bot]"`);
+    await execPromise(
+      `git config --global user.email "github-actions[bot]@users.noreply.github.com"`
+    );
+    await execPromise(
+      `git config --global credential.helper '!f() { echo "username=x-access-token"; echo "password=${adminToken}"; }; f'`
+    );
+
     coreExports.debug(`Cloning the public fork: ${publicFork}`);
     const publicForkUrl = `https://github.com/${publicFork}.git`;
     await retryClone(publicForkUrl);
@@ -30898,6 +30909,9 @@ async function syncForkToMirror(publicFork, privateMirror) {
     coreExports.debug(`Changing directory to the cloned repository`);
     const repoName = publicFork.split('/')[1];
     process.chdir(repoName);
+    // list the files in the directory
+    coreExports.debug(`Current directory: ${process.cwd()}`);
+    coreExports.debug(`Files in the directory: ${await execPromise('ls -la')}`);
 
     coreExports.debug(`Adding the private mirror as a remote`);
     const privateMirrorUrl = `https://github.com/${privateMirror}.git`;
@@ -30913,11 +30927,16 @@ async function syncForkToMirror(publicFork, privateMirror) {
     coreExports.debug(`Successfully pushed to the private mirror`);
 
     coreExports.debug(`Cleaning up the cloned repository`);
-    await execPromise(`cd .. && rm -rf ${repoName}`);
-    coreExports.debug(`Cleaned up the cloned repository`);
+    try {
+      await execPromise(`[ -d "${repoName}" ] && rm -rf ${repoName}`);
+      coreExports.debug(`Cleaned up the cloned repository`);
+    } catch (error) {
+      coreExports.debug(`No repository directory found to clean up: ${repoName}`);
+    }
     coreExports.debug(`Fork ${publicFork} synced to mirror ${privateMirror}`);
   } catch (error) {
     coreExports.setFailed(`Failed to sync fork to mirror: ${error.message}`);
+    coreExports.error(error.stack);
     throw error
   }
 }
@@ -30980,7 +30999,7 @@ async function run() {
     );
     coreExports.debug(`Private Mirror: ${privateMirrorNameWithOwner}`);
     // call syncForkToMirror function
-    await syncForkToMirror(publicFork, privateMirrorNameWithOwner);
+    await syncForkToMirror(publicFork, privateMirrorNameWithOwner, adminToken);
     coreExports.debug(
       `Sync Fork to Mirror: ${publicFork} to ${privateMirrorNameWithOwner}`
     );
