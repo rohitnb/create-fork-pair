@@ -3,48 +3,54 @@
 [![Lint Codebase](https://github.com/rohitnb/create-fork-pair/actions/workflows/linter.yml/badge.svg)](https://github.com/rohitnb/create-fork-pair/actions/workflows/linter.yml)
 [![Continuous Integration](https://github.com/rohitnb/create-fork-pair/actions/workflows/ci.yml/badge.svg)](https://github.com/rohitnb/create-fork-pair/actions/workflows/ci.yml)
 
-GitHub Action to create a Public Fork and a Private Mirror of an upstream open sourced repository. 
+GitHub Action to create a Public Fork and a Private Mirror of an upstream open
+sourced repository.
 
-- *Public Fork*: Is a direct fork of an upstream repository and is used to contribute to the upstream repository
-- *Private Mirror*: A private copy of the Public Fork. It can be used to invite contribution from your organization and also run checks that are relevant to your organization. 
+- _Public Fork_: Is a direct fork of an upstream repository and is used to
+  contribute to the upstream repository
+- _Private Mirror_: A private copy of the Public Fork. It can be used to invite
+  contribution from your organization and also run checks that are relevant to
+  your organization.
 
 ## Usage
 
 ```yml
-  - name: Create Fork Pair
-    id: create-fork-pair
-    uses: rohitnb/create-fork-pair@main
-    with:
-      upstream-repo: OWNER/REPO
-      private-mirror-name: repo-name
-      actor: john-doe
-      admin-token: ${{ secrets.ADMIN_TOKEN }}
-      organization: this-org
+- name: Create Fork Pair
+  id: create-fork-pair
+  uses: rohitnb/create-fork-pair@main
+  with:
+    upstream-repo: OWNER/REPO
+    private-mirror-name: repo-name
+    actor: john-doe
+    admin-token: ${{ secrets.ADMIN_TOKEN }}
+    organization: this-org
 ```
 
-### Inputs 
+### Inputs
 
-| **Input**            | **Description**                                                                 | **Required** | **Default/Recommended Value**                     |
-|-----------------------|---------------------------------------------------------------------------------|--------------|--------------------------------------------------|
-| `upstream-repo`       | Name of the open source repository that you want to fork. Format: `owner/repo` | Yes          | `null`                                           |
-| `private-mirror-name` | Name of the private repository. Format: `repo-name`                            | Yes          | `null`                                           |
-| `actor`               | The user who will be the owner of the private-mirror repo                      | No           | `${{ github.actor }}`                            |
-| `admin-token`         | GitHub Token with the required scopes to create a repository in the organization | Yes          | `null`                                           |
-| `organization`        | The organization where the upstream-repo and the private-mirror will be created in | No           | `${{ github.organization }}`                     |
+| **Input**             | **Description**                                                                    | **Required** | **Default/Recommended Value** |
+| --------------------- | ---------------------------------------------------------------------------------- | ------------ | ----------------------------- |
+| `upstream-repo`       | Name of the open source repository that you want to fork. Format: `owner/repo`     | Yes          | `null`                        |
+| `private-mirror-name` | Name of the private repository. Format: `repo-name`                                | Yes          | `null`                        |
+| `actor`               | The user who will be the owner of the private-mirror repo                          | No           | `${{ github.actor }}`         |
+| `admin-token`         | GitHub Token with the required scopes to create a repository in the organization   | Yes          | `null`                        |
+| `organization`        | The organization where the upstream-repo and the private-mirror will be created in | No           | `${{ github.organization }}`  |
 
 ### Outputs
 
-| **Output**       | **Description**                     |
-|-------------------|-------------------------------------|
-| `public-fork`     | Public fork name. Format: OWNER/REPO |
-| `private-mirror`  | Private mirror name. Format: OWNER/REPO |
+| **Output**       | **Description**                         |
+| ---------------- | --------------------------------------- |
+| `public-fork`    | Public fork name. Format: OWNER/REPO    |
+| `private-mirror` | Private mirror name. Format: OWNER/REPO |
 
 ## Development
 
 ### Requirements
 
 - [Node.js](https://nodejs.org) handy. If you are using a version manager like
-- [`nodenv`](https://github.com/nodenv/nodenv) or [`nvm`](https://github.com/nvm-sh/nvm), you can run `nodenv install` in the root of your repository to install the version specified in
+- [`nodenv`](https://github.com/nodenv/nodenv) or
+  [`nvm`](https://github.com/nvm-sh/nvm), you can run `nodenv install` in the
+  root of your repository to install the version specified in
 - [`package.json`](./package.json). Otherwise, 20.x or later should work!
 
 ## Getting started
@@ -69,9 +75,14 @@ GitHub Action to create a Public Fork and a Private Mirror of an upstream open s
 >
 > INPUT_organization=<Org Name>
 
-3. The [`@github/local-action`](https://github.com/github/local-action) utility can be used to test your action locally. It is a simple command-line tool that "stubs" (or simulates) the GitHub Actions Toolkit. This way, you can run your JavaScript action locally without having to commit and push your changes to a repository.
+3. The [`@github/local-action`](https://github.com/github/local-action) utility
+   can be used to test your action locally. It is a simple command-line tool
+   that "stubs" (or simulates) the GitHub Actions Toolkit. This way, you can run
+   your JavaScript action locally without having to commit and push your changes
+   to a repository.
 
 The `local-action` utility can be run in the following ways:
+
 - Visual Studio Code Debugger
 
   Make sure to review and, if needed, update
@@ -98,7 +109,7 @@ The `local-action` utility can be run in the following ways:
       Duration  227ms (transform 57ms, setup 0ms, collect 180ms, tests 5ms, environment 0ms, prepare 66ms)
    ```
 
-4. :building_construction: Package the JavaScript for distribution
+5. :building_construction: Package the JavaScript for distribution
 
    ```bash
    npm run bundle
@@ -106,7 +117,8 @@ The `local-action` utility can be run in the following ways:
 
 ## Validate the Action
 
-You can now validate the action by manually running the GitHub Actions workflow `test-action.yml`
+You can now validate the action by manually running the GitHub Actions workflow
+`test-action.yml`
 
 ```yaml
 steps:
@@ -129,5 +141,4 @@ steps:
     run: |
       echo "Public Fork: ${{ steps.run-action.outputs.public-fork }}"
       echo "Private Mirror: ${{ steps.run-action.outputs.private-mirror }}"
-
 ```
