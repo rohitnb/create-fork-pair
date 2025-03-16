@@ -163,7 +163,6 @@ export async function syncForkToMirror(publicFork, privateMirror, adminToken) {
     } catch (error) {
       core.debug(`No repository directory found to clean up: ${repoName}`)
     }
-    core.debug(`Cleaned up the cloned repository`)
     core.debug(`Fork ${publicFork} synced to mirror ${privateMirror}`)
   } catch (error) {
     core.setFailed(`Failed to sync fork to mirror: ${error.message}`)

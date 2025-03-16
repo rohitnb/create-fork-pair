@@ -30933,7 +30933,6 @@ async function syncForkToMirror(publicFork, privateMirror, adminToken) {
     } catch (error) {
       coreExports.debug(`No repository directory found to clean up: ${repoName}`);
     }
-    coreExports.debug(`Cleaned up the cloned repository`);
     coreExports.debug(`Fork ${publicFork} synced to mirror ${privateMirror}`);
   } catch (error) {
     coreExports.setFailed(`Failed to sync fork to mirror: ${error.message}`);
