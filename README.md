@@ -1,6 +1,5 @@
 # Create Fork Pair
 
-[![Lint Codebase](https://github.com/rohitnb/create-fork-pair/actions/workflows/linter.yml/badge.svg)](https://github.com/rohitnb/create-fork-pair/actions/workflows/linter.yml)
 [![Continuous Integration](https://github.com/rohitnb/create-fork-pair/actions/workflows/ci.yml/badge.svg)](https://github.com/rohitnb/create-fork-pair/actions/workflows/ci.yml)
 
 GitHub Action to create a Public Fork and a Private Mirror of an upstream open
